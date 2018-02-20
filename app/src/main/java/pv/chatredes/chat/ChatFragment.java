@@ -39,6 +39,7 @@ import pv.chatredes.local.Armazenamento;
 
 import static android.content.Context.WIFI_SERVICE;
 import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
 
 public class ChatFragment extends Fragment implements View.OnClickListener {
 
@@ -161,11 +162,13 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         switch (item.getItemId()) {
             case R.id.firebase_enable:
                 p2p = false;
-                Toast.makeText(getActivity(), "P2P DESABILITADO", Toast.LENGTH_SHORT).show();
+                getActivity().findViewById(R.id.p2p_enable).setVisibility(GONE);
+                //Toast.makeText(getActivity(), "P2P Desabilitado", Toast.LENGTH_SHORT).show();
                 break;
             case R.id.p2p_enable:
                 p2p = true;
-                Toast.makeText(getActivity(), "P2P HABILITADO", Toast.LENGTH_SHORT).show();
+                getActivity().findViewById(R.id.p2p_enable).setVisibility(VISIBLE);
+                //Toast.makeText(getActivity(), "P2P Habilitado", Toast.LENGTH_SHORT).show();
                 iniP2P();
                 break;
         }
@@ -209,7 +212,7 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         ArrayList<Mensagem> mensagensTemp;
         int i;
         try {
-            mensagensTemp = (ArrayList<Mensagem>) Armazenamento.lerDados(getActivity(), destinatario);
+            mensagensTemp = (ArrayList<Mensagem>) Armazenamento.lerDados(getActivity(), id);
             for (i = 0; i < mensagensTemp.size(); i++) {
                 recebidoSucesso(mensagensTemp.get(i));
             }
@@ -224,7 +227,7 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
     //Salva dados local
     private void salvarDadosP2P(){
         try {
-            Armazenamento.salvarDados(getActivity(), destinatario, mensagens);
+            Armazenamento.salvarDados(getActivity(), id, mensagens);
         } catch (IOException e) {
             Log.e("ChatFragment", e.getMessage());
         }

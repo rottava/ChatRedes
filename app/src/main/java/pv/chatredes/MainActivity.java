@@ -71,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.popup).setVisibility(GONE);
         findViewById(R.id.meuip).setVisibility(GONE);
         findViewById(R.id.ipdest).setVisibility(GONE);
+        findViewById(R.id.p2p_enable).setVisibility(GONE);
         emailDest = findViewById(R.id.email_dest);
         ipDest = findViewById(R.id.new_ip_dest);
         meuIP = findViewById(R.id.txt_ip);
@@ -167,11 +168,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (item.getItemId()) {
             case R.id.firebase_enable:
                 p2p = false;
-                Toast.makeText(this, "P2P DESABILITADO", Toast.LENGTH_SHORT).show();
+                findViewById(R.id.p2p_enable).setVisibility(GONE);
+                //Toast.makeText(this, "P2P Desabilitado", Toast.LENGTH_SHORT).show();
                 break;
             case R.id.p2p_enable:
                 p2p = true;
-                Toast.makeText(this, "P2P HABILITADO", Toast.LENGTH_SHORT).show();
+                findViewById(R.id.p2p_enable).setVisibility(VISIBLE);
+                //Toast.makeText(this, "P2P Habilitado", Toast.LENGTH_SHORT).show();
                 break;
             case R.id.logout:
                 new AlertDialog.Builder(this).setTitle(R.string.sair).setMessage(R.string.desconectar).setPositiveButton(R.string.sair, new DialogInterface.OnClickListener() {
