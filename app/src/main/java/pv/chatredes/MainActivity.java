@@ -1,8 +1,8 @@
 package pv.chatredes;
 
-import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -15,12 +15,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -49,10 +51,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ArrayList<User> usuarios;
     private boolean p2p;
     private EditText emailDest;
+    private EditText ipDest;
     private FirebaseAuth firebaseUsuario;
+    private FirebaseDatabase database;
     //private ProgressDialog progressDialog;
     private RecyclerView recyclerView;
     private SwipeRefreshLayout layout;
+    private TextView meuIP;
     UsuarioRecyclerAdapter recyclerAdapter;
 
     @Override
@@ -61,10 +66,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //Getters layout
         setContentView(R.layout.activity_main);
         findViewById(R.id.botao_ok).setOnClickListener(this);
+        findViewById(R.id.botao_meuip).setOnClickListener(this);
+        findViewById(R.id.botao_dest_ip).setOnClickListener(this);
         findViewById(R.id.popup).setVisibility(GONE);
+        findViewById(R.id.meuip).setVisibility(GONE);
+        findViewById(R.id.ipdest).setVisibility(GONE);
         emailDest = findViewById(R.id.email_dest);
+        ipDest = findViewById(R.id.new_ip_dest);
+        meuIP = findViewById(R.id.txt_ip);
         //Inicializa dados do Firebase
         firebaseUsuario = FirebaseAuth.getInstance();
+        database = FirebaseDatabase.getInstance();
         //Inicializa toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -120,6 +132,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Intent intent = new Intent(MainActivity.this, AuthActivity.class);
                     startActivity(intent);
                     finish();
+                } else {
+                    WifiManager wm = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+                    String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+                    FirebaseUser user = firebaseUsuario.getCurrentUser();
+                    database.getReference().child("usuarios").child(user.getEmail().replace(".","")).setValue(new User(user.getEmail(), user.getUid(), ip));
+                    Log.d("IP", "Novo IP == " + ip);
                 }
             }
         };
@@ -133,10 +151,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         inflater.inflate(R.menu.menu_main, menu);
         MenuItem firebaseMenu = menu.findItem(R.id.firebase_enable);
         firebaseMenu.setEnabled(true);
-        MenuItem p2pMenu = menu.findItem(R.id.p2p_enable).setEnabled(true);
+        MenuItem p2pMenu = menu.findItem(R.id.p2p_enable);
         p2pMenu.setEnabled(true);
         MenuItem logoutMenu = menu.findItem(R.id.logout);
         logoutMenu.setEnabled(true);
+        MenuItem meuIp = menu.findItem(R.id.meu_ip);
+        meuIp.setEnabled(true);
+        MenuItem destIp = menu.findItem(R.id.dest_ip);
+        destIp.setEnabled(true);
         return true;
     }
 
@@ -145,9 +167,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (item.getItemId()) {
             case R.id.firebase_enable:
                 p2p = false;
+                Toast.makeText(this, "P2P DESABILITADO", Toast.LENGTH_SHORT).show();
                 break;
             case R.id.p2p_enable:
                 p2p = true;
+                Toast.makeText(this, "P2P HABILITADO", Toast.LENGTH_SHORT).show();
                 break;
             case R.id.logout:
                 new AlertDialog.Builder(this).setTitle(R.string.sair).setMessage(R.string.desconectar).setPositiveButton(R.string.sair, new DialogInterface.OnClickListener() {
@@ -167,6 +191,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 }).show();
                 break;
+            case R.id.meu_ip:
+                WifiManager wm = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+                meuIP.setText(Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress()));
+                findViewById(R.id.meuip).setVisibility(VISIBLE);
+                break;
+            case R.id.dest_ip:
+                findViewById(R.id.ipdest).setVisibility(VISIBLE);
+                break;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -174,9 +206,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         int i = v.getId();
-        if (i == R.id.botao_ok) {
-            //checar se email e valido
-            abrirChat(emailDest.getText().toString());
+        switch (i) {
+            case R.id.botao_ok:
+                abrirChat(emailDest.getText().toString());
+                break;
+            case R.id.botao_meuip:
+                findViewById(R.id.meuip).setVisibility(GONE);
+                break;
+            case R.id.botao_dest_ip:
+                int pos;
+                if (ipDest.getText().toString().equals("")){
+                    findViewById(R.id.ipdest).setVisibility(GONE);
+                } else {
+                    if (validate(ipDest.getText().toString())) {
+                        pos = contem(emailDest.getText().toString());
+                        usuarios.get(pos).ip = ipDest.getText().toString();
+                        Fragment f = getSupportFragmentManager().findFragmentById(R.id.frame_layout_content_chat);
+                        FragmentManager fragmentManager = getSupportFragmentManager();
+                        fragmentManager.beginTransaction().remove(f).commit();
+                        abrirChat(emailDest.getText().toString());
+                    } else {
+                        Toast.makeText(this, "email não registrado!", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                break;
         }
     }
 
@@ -196,6 +249,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(getSupportFragmentManager().getBackStackEntryCount() == 0) {
             //Torna popup invisivel
             findViewById(R.id.popup).setVisibility(GONE);
+            findViewById(R.id.meuip).setVisibility(GONE);
+            findViewById(R.id.ipdest).setVisibility(GONE);
             //Torna FAB visivel
             findViewById(R.id.fab).setVisibility(VISIBLE);
         }
@@ -214,13 +269,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         FragmentManager fragmentManager = getSupportFragmentManager();
         if(findViewById(R.id.popup).getVisibility() == VISIBLE) {
             findViewById(R.id.popup).setVisibility(GONE);
-        } else if (f != null){
-            fragmentManager.beginTransaction().remove(f).commit();
-            findViewById(R.id.fab).setVisibility(VISIBLE);
-            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-            getSupportActionBar().setDisplayShowHomeEnabled(false);
         } else {
-            super.onBackPressed();
+            if (findViewById(R.id.meuip).getVisibility() == VISIBLE) {
+                findViewById(R.id.meuip).setVisibility(GONE);
+            } else {
+                if (findViewById(R.id.ipdest).getVisibility() == VISIBLE) {
+                    findViewById(R.id.ipdest).setVisibility(GONE);
+                } else {
+                    if (f != null){
+                        fragmentManager.beginTransaction().remove(f).commit();
+                        findViewById(R.id.fab).setVisibility(VISIBLE);
+                        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+                        getSupportActionBar().setDisplayShowHomeEnabled(false);
+                    } else {
+                        super.onBackPressed();
+                    }
+                }
+            }
         }
     }
 
@@ -339,6 +404,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             //Não existe, erro
             Toast.makeText(this, "email não registrado!", Toast.LENGTH_SHORT).show();
         } else {
+            emailDest.setText(destinatario);
             //Iniciar fragmento
             Fragment fragment = null;
             try {
@@ -377,4 +443,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return i;
     }
 
+    public static boolean validate(final String ip) {
+        String PATTERN = "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$";
+
+        return ip.matches(PATTERN);
+    }
 }

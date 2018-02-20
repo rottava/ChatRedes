@@ -1,12 +1,16 @@
 package pv.chatredes.chat;
 
 import android.app.ProgressDialog;
+import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -20,13 +24,20 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 
 import pv.chatredes.MainActivity;
 import pv.chatredes.R;
 import pv.chatredes.local.Armazenamento;
 
+import static android.content.Context.WIFI_SERVICE;
 import static android.view.View.GONE;
 
 public class ChatFragment extends Fragment implements View.OnClickListener {
@@ -36,10 +47,12 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
     private ChatRecyclerAdapter recyclerAdapter;
     private DatabaseReference databaseReference;
     private EditText novaMensagem;
+    private int respServidor;
+    static final int porta = 9001;
     private Mensagem mensagem;
+    private Mensagem mensagemRecebida;
     private ProgressDialog progressDialog;
     private RecyclerView recyclerView;
-    private String remetente;
     private String remetenteUID;
     private String destinatario;
     private String destinatarioUID;
@@ -61,7 +74,6 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
             Log.d("uid: ", destinatarioUID);
             destinatarioIP = getArguments().getString("destinatarioIP");
             Log.d("ip: ", destinatarioIP);
-            remetente = getArguments().getString("remetente");
             remetenteUID = getArguments().getString("remetenteUID");
             p2p = getArguments().getBoolean("p2p");
         }
@@ -74,6 +86,8 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         View fragmentView = inflater.inflate(R.layout.fragment_chat, container, false);
         //Torna popup invisivel
         getActivity().findViewById(R.id.popup).setVisibility(GONE);
+        getActivity().findViewById(R.id.meuip).setVisibility(GONE);
+        getActivity().findViewById(R.id.ipdest).setVisibility(GONE);
         //Torna FAB invisivel
         getActivity().findViewById(R.id.fab).setVisibility(GONE);
         //Ajusta toolbar
@@ -87,7 +101,7 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         recyclerView.setAdapter(recyclerAdapter);
         //Botão enviar
         Button enviarMensagem = fragmentView.findViewById(R.id.enviar_mensagem);
-        enviarMensagem.setOnClickListener(this);
+        enviarMensagem.setOnClickListener(ChatFragment.this);
         novaMensagem = fragmentView.findViewById(R.id.nova_mensagem);
         //Janela de espera
         progressDialog = new ProgressDialog(getActivity());
@@ -101,6 +115,8 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         if(p2p){
             //Inicializa conversas do Firebase
             lerDadosP2P();
+            //Inicializacao P2P, ouve porta
+            iniP2P();
         } else {
             //Inicializa conversas p2p
             recebeMensagemFirebase();
@@ -122,6 +138,14 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
     }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (p2p) {
+            p2p = false;
+        }
+    }
+
+    @Override
     public void onClick(View v) {
         //Enviar mensagem pelo metodo
         if (p2p) {
@@ -131,17 +155,70 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         }
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        super.onOptionsItemSelected(item);
+        switch (item.getItemId()) {
+            case R.id.firebase_enable:
+                p2p = false;
+                Toast.makeText(getActivity(), "P2P DESABILITADO", Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.p2p_enable:
+                p2p = true;
+                Toast.makeText(getActivity(), "P2P HABILITADO", Toast.LENGTH_SHORT).show();
+                iniP2P();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void meuIP(){
+        WifiManager wm = (WifiManager) getContext().getApplicationContext().getSystemService(WIFI_SERVICE);
+        String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+    }
+
+    private void iniP2P(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+
+                    //Cria uma socket servidor (recebimento) e atribui porta
+                    ServerSocket sServidor = new ServerSocket(porta);
+                    //Cria socket de cliente (retorno)
+                    Socket sCliente;
+                    //Aqui fica ouvindo a porta
+                    while (p2p) {
+                        //Aceita conexao com cliente
+                        sCliente = sServidor.accept();
+                        //Pra cada cliente uma nova porta
+                        recebeTCP serverAsyncTask = new recebeTCP();
+                        //Inicia tarefa e passa porta cliente
+                        serverAsyncTask.execute(sCliente);
+                    }
+                    sServidor.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
     //Carrega dados local
     private void lerDadosP2P(){
-        mensagens = new ArrayList<>();
+        ArrayList<Mensagem> mensagensTemp;
+        int i;
         try {
-            mensagens = (ArrayList<Mensagem>) Armazenamento.lerDados(getActivity(), destinatario);
+            mensagensTemp = (ArrayList<Mensagem>) Armazenamento.lerDados(getActivity(), destinatario);
+            for (i = 0; i < mensagensTemp.size(); i++) {
+                recebidoSucesso(mensagensTemp.get(i));
+            }
         } catch (IOException e) {
             Log.e("ChatFragment", e.getMessage());
         } catch (ClassNotFoundException e) {
             Log.e("ChatFragment_a", e.getMessage());
         }
-
+        Log.d("lerDadosP2P", "Mensagens:" + mensagens.size());
     }
 
     //Salva dados local
@@ -167,10 +244,8 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         if (p2p) {
             //Dados local
             salvarDadosP2P();
-        } else {
-            //Recycle view
-            recyclerAdapter.notifyDataSetChanged();
         }
+        recyclerAdapter.notifyDataSetChanged();
         //Apaga mensagem na caixa de texto
         novaMensagem.setText("");
         Log.d("enviadoSucesso", "saiu");
@@ -199,12 +274,11 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         if (p2p){
             //Dados local
             salvarDadosP2P();
-        } else {
-            //Recycle view
-            recyclerAdapter.notifyDataSetChanged();
         }
+        recyclerAdapter.notifyDataSetChanged();
         //Rola a tela até a ultima mensagem
         recyclerView.smoothScrollToPosition(recyclerAdapter.getItemCount() - 1);
+        Log.d("recebidoSucesso", "Total de mensagens =" + mensagens.size());
         Log.d("recebidoSucesso", "saiu");
     }
 
@@ -213,33 +287,24 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         Toast.makeText(getActivity(), mensagem, Toast.LENGTH_SHORT).show();
     }
 
-    //TODO
     //Envia mensagens através do metodo P2P
     private void enviaMensagemP2P() {
-        boolean enviado = true;
-
-        //showProgressDialog();
-
+        //Mostra tela de espera
+        showProgressDialog();
+        //Inicializa retorno do destinatario
         mensagem = new Mensagem(remetenteUID, novaMensagem.getText().toString(), System.currentTimeMillis());
+        //Envia mensagem para o destinatario
+        enviaTCP tcp = new enviaTCP();
+        tcp.execute(mensagem);
 
-        //hideProgressDialog();
-        if (enviado) {
+        hideProgressDialog();
+
+        if (respServidor == 1) {
             enviadoSucesso();
         } else {
             enviadoFalha("Mensagem não enviada: ");
         }
-    }
 
-    //TODO
-    //Recebe mensagens através do método P2P
-    public void recebeMensagemP2P() {
-        Mensagem mensagemRecebida = new Mensagem("123456", "dEM", System.currentTimeMillis());
-        boolean valido = true;
-        if(valido){
-            recebidoSucesso(mensagemRecebida);
-        } else {
-            recebidoFalha("Mensagem não recebida: ");
-        }
     }
 
     //Envia mensagens através do Firebase
@@ -292,7 +357,7 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
                             Log.d("recebeMensagem.Added", "entrou");
                             //Oculta janela de espera
                             hideProgressDialog();
-                            Mensagem mensagemRecebida = dataSnapshot.getValue(Mensagem.class);
+                            mensagemRecebida = dataSnapshot.getValue(Mensagem.class);
                             recebidoSucesso(mensagemRecebida);
                             Log.d("recebeMensagem.Added", "saiu");
 
@@ -328,7 +393,7 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
                             Log.d("recebeMensagem.Added", "entrou");
                             //Oculta janela de espera
                             hideProgressDialog();
-                            Mensagem mensagemRecebida = dataSnapshot.getValue(Mensagem.class);
+                            mensagemRecebida = dataSnapshot.getValue(Mensagem.class);
                             recebidoSucesso(mensagemRecebida);
                             Log.d("recebeMensagem.Added", "saiu");
                         }
@@ -387,6 +452,98 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
     private void hideProgressDialog() {
         if (progressDialog != null && progressDialog.isShowing()) {
             progressDialog.dismiss();
+        }
+    }
+
+    class enviaTCP extends AsyncTask<Mensagem, Void, Void> {
+        @Override
+        protected Void doInBackground(Mensagem... param) {
+            int cont;
+            Mensagem novaMensagem;
+            PrintWriter escritor;
+            Socket socket;
+            String msg;
+            try {
+                Log.d("enviaTCP", "enviando");
+                novaMensagem = param[0];
+                msg = novaMensagem.remetenteUID + '\n' + String.valueOf(novaMensagem.timestamp) + '\n' + novaMensagem.mensagem + '\n';
+                socket = new Socket(destinatarioIP, porta);
+                escritor = new PrintWriter(socket.getOutputStream());
+                escritor.write(msg);
+                escritor.flush();
+                escritor.close();
+                //Espera resposta do destinatario
+                respServidor = 0;
+                cont = 0;
+                while (respServidor == 0 && cont < 10){
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    cont++;
+                }
+
+                if (cont == 10) {
+                    respServidor = 2;
+                }
+
+            } catch (IOException e) {
+                Log.d("enviaTCP", "IOexception");
+                e.printStackTrace();
+            }
+
+            Log.d("enviaTCP", "enviado: " + respServidor);
+            return null;
+        }
+    }
+
+    class recebeTCP extends AsyncTask<Socket, Void, Void> {
+        @Override
+        protected Void doInBackground(Socket... params) {
+            long timestamp;
+            Socket socket = params[0];
+            String msg;
+            String uid;
+            try {
+                //Recebe data do remetente
+                InputStream recebido = socket.getInputStream();
+                Log.d("recebeTCP", "recebido");
+                BufferedReader bufferCliente = new BufferedReader(new InputStreamReader(recebido));
+                //Le buffer
+                uid = bufferCliente.readLine();
+                timestamp = Long.parseLong(bufferCliente.readLine(), 10);
+                msg = bufferCliente.readLine();
+                //Envia data para o remetente
+                Log.d("recebeTCP", "respondendo");
+                PrintWriter cliente = new PrintWriter(
+                        socket.getOutputStream(), true);
+                if (destinatarioUID.equals(uid)) {
+                    cliente.println(1);
+                    mensagemRecebida = new Mensagem(uid, msg, timestamp);
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d("RecebidoSucesso: ", mensagemRecebida.mensagem);
+                            recebidoSucesso(mensagemRecebida);
+                        }
+                    });
+
+                } else {
+                    //Recebeu resposta de envio
+                    if (uid.equals("1")) {
+                        respServidor = 1;
+                    } else {
+                        respServidor = 2;
+                        cliente.println(2);
+                    }
+                }
+                Log.d("recebeTCP", "saindo");
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
         }
     }
 

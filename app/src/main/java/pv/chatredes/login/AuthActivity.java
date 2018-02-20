@@ -92,7 +92,7 @@ public class AuthActivity extends AppCompatActivity implements View.OnClickListe
 
         showProgressDialog();
 
-        firebaseUsuario.createUserWithEmailAndPassword(email, senha).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+        firebaseUsuario.createUserWithEmailAndPassword(email, senha).addOnCompleteListener(AuthActivity.this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
@@ -120,7 +120,7 @@ public class AuthActivity extends AppCompatActivity implements View.OnClickListe
 
         showProgressDialog();
 
-        firebaseUsuario.signInWithEmailAndPassword(email, senha).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+        firebaseUsuario.signInWithEmailAndPassword(email, senha).addOnCompleteListener(AuthActivity.this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
@@ -159,7 +159,7 @@ public class AuthActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.botao_verificar_email).setEnabled(false);
         final FirebaseUser usuario = firebaseUsuario.getCurrentUser();
 
-        usuario.sendEmailVerification().addOnCompleteListener(this, new OnCompleteListener<Void>() {
+        usuario.sendEmailVerification().addOnCompleteListener(AuthActivity.this, new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(@NonNull Task<Void> task) {
                         findViewById(R.id.botao_verificar_email).setEnabled(true);

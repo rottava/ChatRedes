@@ -59,6 +59,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "961077767782-alqj5u0q3b5voucqhjm5e9512lsm53ar.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pv.chatredes",
+            "certificate_hash": "7593d54252e34d6a5c7e13b447853578c0aa6988"
+          }
+        },
+        {
+          "client_id": "961077767782-ubi9cmj8uf4pendj20h7aem0fnqirbie.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pv.chatredes",
+            "certificate_hash": "a31f56fe9bc19732aa336c4a76ce358ec3cf6c48"
+          }
+        },
+        {
           "client_id": "961077767782-uil79cspve0ogk9bemdqeq2fhl643goo.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

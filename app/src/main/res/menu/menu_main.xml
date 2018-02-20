@@ -20,4 +20,16 @@
         android:orderInCategory="300"
         android:title="@string/sair"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/meu_ip"
+        android:orderInCategory="400"
+        android:title="@string/meu_ip"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/dest_ip"
+        android:orderInCategory="500"
+        android:title="@string/dest_ip"
+        app:showAsAction="never" />
 </menu>
