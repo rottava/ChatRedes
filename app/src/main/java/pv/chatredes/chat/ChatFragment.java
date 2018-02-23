@@ -336,7 +336,7 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         //Mostra janela de espera
         showProgressDialog();
         //Recebe mensagem do Firebase
-        databaseReference.child("conversas").getRef().addListenerForSingleValueEvent(new ValueEventListener() {
+         databaseReference.child("conversas").getRef().addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.hasChild(id)) {
