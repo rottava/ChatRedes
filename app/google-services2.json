@@ -1,0 +1,107 @@
+{
+  "project_info": {
+    "project_number": "961077767782",
+    "firebase_url": "https://pmchatredes.firebaseio.com",
+    "project_id": "pmchatredes",
+    "storage_bucket": "pmchatredes.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:961077767782:android:beddb92156178298",
+        "android_client_info": {
+          "package_name": "pm.chatredes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "961077767782-ct995qlc9a1jfdqvrqqts7j63d075sn2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pm.chatredes",
+            "certificate_hash": "58d8d404f3b399c055974826567ad6a3867364b7"
+          }
+        },
+        {
+          "client_id": "961077767782-jpkb88lg9g81t5kq3096i75e4c863abt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCszS826xyGBj1jUn4inm5P56Sr4VTZlmI"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "961077767782-jpkb88lg9g81t5kq3096i75e4c863abt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:961077767782:android:c53ad299468a8e67",
+        "android_client_info": {
+          "package_name": "pv.chatredes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "961077767782-ubi9cmj8uf4pendj20h7aem0fnqirbie.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pv.chatredes",
+            "certificate_hash": "a31f56fe9bc19732aa336c4a76ce358ec3cf6c48"
+          }
+        },
+        {
+          "client_id": "961077767782-uil79cspve0ogk9bemdqeq2fhl643goo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pv.chatredes",
+            "certificate_hash": "58d8d404f3b399c055974826567ad6a3867364b7"
+          }
+        },
+        {
+          "client_id": "961077767782-jpkb88lg9g81t5kq3096i75e4c863abt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCszS826xyGBj1jUn4inm5P56Sr4VTZlmI"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "961077767782-jpkb88lg9g81t5kq3096i75e4c863abt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
