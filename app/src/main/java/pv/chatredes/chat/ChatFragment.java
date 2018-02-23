@@ -175,11 +175,6 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         return super.onOptionsItemSelected(item);
     }
 
-    private void meuIP(){
-        WifiManager wm = (WifiManager) getContext().getApplicationContext().getSystemService(WIFI_SERVICE);
-        String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
-    }
-
     private void iniP2P(){
         new Thread(new Runnable() {
             @Override
@@ -262,7 +257,7 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
 
     //Mensagem recebida com sucesso atualiza recycle view e salva mensagem
     public void recebidoSucesso(Mensagem mensagem) {
-        Log.d("recebidoSucesso", "entrou");
+        //Log.d("recebidoSucesso", "entrou");
         //Cria recycle view
         if (recyclerAdapter == null) {
             recyclerAdapter = new ChatRecyclerAdapter(new ArrayList<Mensagem>());
@@ -281,7 +276,7 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         recyclerAdapter.notifyDataSetChanged();
         //Rola a tela até a ultima mensagem
         recyclerView.smoothScrollToPosition(recyclerAdapter.getItemCount() - 1);
-        Log.d("recebidoSucesso", "Total de mensagens =" + mensagens.size());
+        //Log.d("recebidoSucesso", "Total de mensagens =" + mensagens.size());
         Log.d("recebidoSucesso", "saiu");
     }
 
@@ -293,20 +288,11 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
     //Envia mensagens através do metodo P2P
     private void enviaMensagemP2P() {
         //Mostra tela de espera
-        showProgressDialog();
         //Inicializa retorno do destinatario
         mensagem = new Mensagem(remetenteUID, novaMensagem.getText().toString(), System.currentTimeMillis());
         //Envia mensagem para o destinatario
         enviaTCP tcp = new enviaTCP();
         tcp.execute(mensagem);
-
-        hideProgressDialog();
-
-        if (respServidor == 1) {
-            enviadoSucesso();
-        } else {
-            enviadoFalha("Mensagem não enviada: ");
-        }
 
     }
 
@@ -350,7 +336,7 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         //Mostra janela de espera
         showProgressDialog();
         //Recebe mensagem do Firebase
-         databaseReference.child("conversas").getRef().addListenerForSingleValueEvent(new ValueEventListener() {
+        databaseReference.child("conversas").getRef().addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.hasChild(id)) {
@@ -467,6 +453,13 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
             Socket socket;
             String msg;
             try {
+                ChatFragment.this.getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        showProgressDialog();
+                    }
+                });
+
                 Log.d("enviaTCP", "enviando");
                 novaMensagem = param[0];
                 msg = novaMensagem.remetenteUID + '\n' + String.valueOf(novaMensagem.timestamp) + '\n' + novaMensagem.mensagem + '\n';
@@ -475,28 +468,21 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
                 escritor.write(msg);
                 escritor.flush();
                 escritor.close();
-                //Espera resposta do destinatario
-                respServidor = 0;
-                cont = 0;
-                while (respServidor == 0 && cont < 10){
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    cont++;
-                }
-
-                if (cont == 10) {
-                    respServidor = 2;
-                }
 
             } catch (IOException e) {
                 Log.d("enviaTCP", "IOexception");
                 e.printStackTrace();
             }
 
-            Log.d("enviaTCP", "enviado: " + respServidor);
+            ChatFragment.this.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    hideProgressDialog();
+                }
+            });
+
+
+            Log.d("enviaTCP", "enviado");
             return null;
         }
     }
@@ -505,6 +491,7 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
         @Override
         protected Void doInBackground(Socket... params) {
             long timestamp;
+            PrintWriter escritor;
             Socket socket = params[0];
             String msg;
             String uid;
@@ -515,34 +502,52 @@ public class ChatFragment extends Fragment implements View.OnClickListener {
                 BufferedReader bufferCliente = new BufferedReader(new InputStreamReader(recebido));
                 //Le buffer
                 uid = bufferCliente.readLine();
-                timestamp = Long.parseLong(bufferCliente.readLine(), 10);
-                msg = bufferCliente.readLine();
-                //Envia data para o remetente
-                Log.d("recebeTCP", "respondendo");
-                PrintWriter cliente = new PrintWriter(
-                        socket.getOutputStream(), true);
-                if (destinatarioUID.equals(uid)) {
-                    cliente.println(1);
-                    mensagemRecebida = new Mensagem(uid, msg, timestamp);
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.d("RecebidoSucesso: ", mensagemRecebida.mensagem);
-                            recebidoSucesso(mensagemRecebida);
-                        }
-                    });
-
-                } else {
+                if(uid.equals("1") || uid.equals("2")){
+                    Log.d("recebeTCP", "Resposta");
                     //Recebeu resposta de envio
                     if (uid.equals("1")) {
+                        Log.d("recebeTCP", "Resposta recebida = 1");
                         respServidor = 1;
+                        ChatFragment.this.getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                enviadoSucesso();
+                            }
+                        });
                     } else {
                         respServidor = 2;
-                        cliente.println(2);
+                        ChatFragment.this.getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                enviadoFalha("Mensagem não enviada: ");
+                            }
+                        });
+                    }
+
+                } else {
+                    timestamp = Long.parseLong(bufferCliente.readLine(), 10);
+                    msg = bufferCliente.readLine();
+                    //Envia data para o remetente
+                    Log.d("recebeTCP", "Verificando mensagem");
+                    //socket.close();
+                    //socket = new Socket(destinatarioIP, porta);
+                    if (destinatarioUID.equals(uid)) {
+                        socket = new Socket(destinatarioIP, porta);
+                        escritor = new PrintWriter(socket.getOutputStream());
+                        escritor.write("1"+'\n');
+                        escritor.flush();
+                        socket.close();
+                        mensagemRecebida = new Mensagem(uid, msg, timestamp);
+                        ChatFragment.this.getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.d("recebeTCP", "Mensagem: " + mensagemRecebida.mensagem);
+                                recebidoSucesso(mensagemRecebida);
+                            }
+                        });
                     }
                 }
                 Log.d("recebeTCP", "saindo");
-                socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }

@@ -144,6 +144,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         };
         //Listener do Firebase
         firebaseUsuario.addAuthStateListener(firebaseListener);
+        p2p=true;
+        findViewById(R.id.p2p_enable).setVisibility(VISIBLE);
     }
 
     @Override
@@ -343,7 +345,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     //Log.d("email: ", usuario.email);
                     //Log.d("ui: ", usuario.uid);
                     if (!TextUtils.equals(usuario.uid, firebaseUsuario.getCurrentUser().getUid())) {
-                       usuarios.add(usuario);
+                        usuarios.add(usuario);
                     }
                 }
                 //hideProgressDialog();
