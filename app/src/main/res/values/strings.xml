@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">ChatRedes</string>
+    <string name="autenticacao_status_fmt">Email: %1$s (verified: %2$b)</string>
+    <string name="auth_failed">Autenticação falhou</string>
+    <string name="auth_label">Identificação</string>
+    <string name="auth_titulo">Para prosseguir é necessário autenticação</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="carregando">Carregando</string>
+    <string name="criar_conta">Criar conta</string>
+    <string name="conectado">Conectado</string>
+    <string name="conversa">Conversa</string>
+    <string name="desc_firebase_lockup">Autenticação Firebase</string>
+    <string name="dest_ip">IP Destino</string>
+    <string name="desconectar">Deseja desconectar do Firebase?</string>
+    <string name="desconectado">Desconectado</string>
+    <string name="destinatario">Insira o e-mail do destinatário</string>
+    <string name="entrar">Entrar</string>
+    <string name="enviar">Enviar</string>
+    <string name="esperando">Por favor aguarde</string>
+    <string name="firebase">Firebase</string>
+    <string name="firebase_status_fmt">Usuario Firebase: %s</string>
+    <string name="hint_email">meuemail@provedor.dominio</string>
+    <string name="hint_password">S3_nh@.5e9ura</string>
+    <string name="meu_ip">Meu IP</string>
+    <string name="ok">OK</string>
+    <string name="p2p">P2P</string>
+    <string name="prosseguir">Avançar</string>
+    <string name="sair">Sair</string>
+    <string name="verificar_email">Verificar e-mail</string>
+
+</resources>
